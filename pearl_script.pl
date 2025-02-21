@@ -4,29 +4,28 @@ use warnings;
 
 print "Starting memory wipe (excluding active script)...\n";
 
-# Function to zero out RAM
-sub clear_ram {
-    print "Clearing RAM...\n";
-    system("sudo purge"); # Force macOS to release inactive memory
-    system("sync; sudo sysctl -w vm.swapusage=0");
-}
-
-# Function to zero out unused disk space
-sub clear_disk_space {
-    print "Zeroing out free disk space...\n";
-    system("diskutil secureErase 0 free");
-}
-
 # Get the currently executing script’s PID
 my $pid = $$;
 print "Preserving process ID: $pid\n";
 
-# Get all running processes and kill everything except the script itself
+# Function to zero out RAM (no sudo needed in Recovery Mode)
+sub clear_ram {
+    print "Clearing RAM...\n";
+    system("purge");  # macOS native memory cleaner (works in Recovery)
+}
+
+# Function to zero out unused disk space (Recovery Mode Compatible)
+sub clear_disk_space {
+    print "Zeroing out free disk space...\n";
+    system("diskutil secureErase 0 free");  # Zeroes unused space
+}
+
+# Get all running processes and kill everything except this script
 my @processes = `ps -ax -o pid`;
 foreach my $process (@processes) {
     chomp($process);
     next if $process == $pid;  # Skip the script itself
-    system("sudo kill -9 $process");
+    system("kill -9 $process");
 }
 
 # Run cleanup
@@ -36,5 +35,5 @@ clear_disk_space();
 print "Memory wipe complete. Rebooting to last macOS installation...\n";
 
 # Reboot to last working macOS install
-system("sudo bless --mount /System/Volumes/Data --setBoot --nextonly");
-system("sudo reboot");
+system("bless --mount /System/Volumes/Data --setBoot --nextonly");
+system("reboot");
